@@ -202,7 +202,6 @@ namespace CR.MessageDispatch.Dispatchers.EventStore
             lock (_subscriptionLock)
             {
                 KillSubscription();
-
                 if (_liveOnly) _subscription = _connection.SubscribeToStreamAsync(_streamName, true, EventAppeared, SubscriptionDropped).Result;
                 else
                 {
@@ -257,22 +256,19 @@ namespace CR.MessageDispatch.Dispatchers.EventStore
 
         private void KillSubscription()
         {
-            lock (_subscriptionLock)
+            switch (_subscription)
             {
-                switch (_subscription)
-                {
-                    case EventStoreSubscription liveSubscription:
-                        liveSubscription.Dispose();
-                        break;
-                    case EventStoreCatchUpSubscription catchUpSubscription:
-                        catchUpSubscription.Stop();
-                        break;
-                    case null: break;
-                    default: throw new InvalidOperationException("The event store subscription was invalid.");
-                }
-
-                _subscription = null;
+                case EventStoreSubscription liveSubscription:
+                    liveSubscription.Dispose();
+                    break;
+                case EventStoreCatchUpSubscription catchUpSubscription:
+                    catchUpSubscription.Stop();
+                    break;
+                case null: break;
+                default: throw new InvalidOperationException("The event store subscription was invalid.");
             }
+
+            _subscription = null;
         }
 
         private bool _catchingUp = true;
