@@ -160,10 +160,13 @@ namespace CR.MessageDispatch.Dispatchers.EventStore
 
         private void HeartbeatTimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
         {
-            SendHeartbeat();
-            if (ViewModelsReady || _lastHeartbeat >= DateTime.UtcNow.Subtract(_heartbeatTimeout)) return;
-            _logger.Error($"Subscriber heartbeat timeout, last heartbeat: {_lastHeartbeat:G} restarting subscription");
-            RestartSubscription();
+            lock (_subscriptionLock)
+            {
+                SendHeartbeat();
+                if (ViewModelsReady || _lastHeartbeat >= DateTime.UtcNow.Subtract(_heartbeatTimeout)) return;
+                _logger.Error($"Subscriber heartbeat timeout, last heartbeat: {_lastHeartbeat:G} restarting subscription");
+                RestartSubscription();
+            }
         }
 
         public void SendHeartbeat()
