@@ -196,14 +196,14 @@ namespace CR.MessageDispatch.Dispatchers.EventStore
 
         public void Start(bool restart = false)
         {
-            if (_usingHeartbeats)
-            {
-                SendHeartbeat();
-                _heartbeatTimer.Start();
-            }
-
             lock (_subscriptionLock)
             {
+                if (_usingHeartbeats)
+                {
+                    SendHeartbeat();
+                    _heartbeatTimer.Start();
+                }
+
                 KillSubscription();
                 if (_liveOnly) _subscription = _connection.SubscribeToStreamAsync(_streamName, true, EventAppeared, SubscriptionDropped).Result;
                 else
