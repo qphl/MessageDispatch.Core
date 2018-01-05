@@ -234,15 +234,12 @@ namespace CR.MessageDispatch.Dispatchers.EventStore
             if (ex != null) _logger.Info(ex, "Event Store subscription dropped {0}", subscriptionDropReason.ToString());
             else _logger.Info("Event Store subscription dropped {0}", subscriptionDropReason.ToString());
 
-            switch (subscriptionDropReason)
+            if (subscriptionDropReason == SubscriptionDropReason.UserInitiated)
             {
-                case SubscriptionDropReason.UserInitiated:
-                    _logger.Info("Not attempting to restart user initiated drop. Subscription is dead.");
-                    return;
-                case SubscriptionDropReason.ConnectionClosed:
-                    _logger.Info("Not attempting to restart subscription on disposed connection. Subscription is dead.");
-                    return;
+                _logger.Info("Not attempting to restart user initiated drop. Subscription is dead.");
+                return;
             }
+
             RestartSubscription();
         }
 
