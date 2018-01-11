@@ -2,8 +2,6 @@
 using System.Collections.Concurrent;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security.AccessControl;
-using System.Security.Principal;
 using System.Threading;
 using System.Timers;
 using CR.MessageDispatch.Core;
@@ -17,21 +15,13 @@ namespace CR.MessageDispatch.Dispatchers.EventStore
     {
         public class CatchupProgress
         {
-            public string StreamName { get; private set; }
-            public int EventsProcessed { get; private set; }
-            public int StartPosition { get; private set; }
-            public int TotalEvents { get; private set; }
+            public decimal CatchupPercentage => (decimal)EventsProcessed / (TotalEvents - StartPosition) * 100;
+            public decimal StreamPercentage => ((decimal)StartPosition + EventsProcessed) / TotalEvents * 100;
 
-            public decimal StreamPercentage
-            {
-                get { return (((decimal) StartPosition + EventsProcessed)/TotalEvents)*100; }
-            }
-
-            public decimal CatchupPercentage
-            {
-                get { return ((decimal) EventsProcessed/(TotalEvents - StartPosition))*100; }
-            }
-
+            public string StreamName { get; }
+            public int EventsProcessed { get; }
+            public int StartPosition { get; }
+            public int TotalEvents { get; }
 
             public CatchupProgress(int eventsProcessed, int startPosition, string streamName, int totalEvents)
             {
@@ -42,108 +32,93 @@ namespace CR.MessageDispatch.Dispatchers.EventStore
             }
 
             public override string ToString()
-            {
-                return String.Format("[{0}] Stream Pos: {1:0.#}% ({2}/{3}), Caught up: {4:0.#}% ({5}/{6})", StreamName,
-                    StreamPercentage, EventsProcessed + StartPosition, TotalEvents, CatchupPercentage, EventsProcessed,
-                    TotalEvents - StartPosition);
-            }
+                => $"[{StreamName}] Stream Pos: {StreamPercentage:0.#}% ({EventsProcessed + StartPosition}/{TotalEvents}), Caught up: {CatchupPercentage:0.#}% ({EventsProcessed}/{TotalEvents - StartPosition})";
         }
-
-        private IEventStoreConnection _connection;
-        private IDispatcher<ResolvedEvent> _dispatcher;
-
-        private int? _startingPosition;
-        private object _subscription;
-        private object _subscriptionLock = new object();
-        private string _streamName;
-        private readonly WriteThroughFileCheckpoint _checkpoint;
-        private int _catchupPageSize;
-        private BlockingCollection<ResolvedEvent> _queue;
-        private readonly string _heartbeatStreamName = "SubscriberHeartbeat-" + Guid.NewGuid();
-        private readonly string _heartbeatEventType = "SubscriberHeartbeat";
-        private TimeSpan _heartbeatTimeout;
-        private int? _lastReceivedEventNumber;
-        private bool _liveOnly;
-
-        private readonly Timer _liveProcessingTimer = new Timer(10 * 60 * 1000);
-        private Timer _heartbeatTimer;
-        private DateTime _lastHeartbeat;
-        private bool _usingHeartbeats = false;
-        private int _maxLiveQueueSize;
-
-        private int _eventsProcessed;
 
         public CatchupProgress CatchUpPercentage
         {
             get
             {
-                var totalEvents =
-                    _connection.ReadStreamEventsBackwardAsync(_streamName, StreamPosition.End, 1, true).Result.Events[0]
-                        .OriginalEventNumber;
+                var totalEvents = _connection.ReadStreamEventsBackwardAsync(_streamName, StreamPosition.End, 1, true).Result.Events[0].OriginalEventNumber;
                 var start = _startingPosition ?? 0;
+
                 return new CatchupProgress(_eventsProcessed, start, _streamName, totalEvents);
             }
         }
 
-        public bool ViewModelsReady => !_catchingUp && (_lastDispatchedEventNumber >= _lastNonLiveEventNumber);
+        public bool ViewModelsReady => !_catchingUp && _lastDispatchedEventNumber >= _lastNonLiveEventNumber;
 
+        private IDispatcher<ResolvedEvent> _dispatcher;
+        private IEventStoreConnection _connection;
+
+        private readonly string _heartbeatStreamName = $"SubscriberHeartbeat-{Guid.NewGuid()}";
+        private const string HeartbeatEventType = "SubscriberHeartbeat";
+        private TimeSpan _heartbeatTimeout;
+        private DateTime _lastHeartbeat;
+        private bool _usingHeartbeats;
+        private Timer _heartbeatTimer;
         private ILogger _logger;
 
+        private readonly Timer _liveProcessingTimer = new Timer(10 * 60 * 1000);
+        private readonly object _subscriptionLock = new object();
+        private readonly WriteThroughFileCheckpoint _checkpoint;
+        private BlockingCollection<ResolvedEvent> _queue;
+        private int? _lastReceivedEventNumber;
+        private int? _startingPosition;
+        private int _maxLiveQueueSize;
+        private int _eventsProcessed;
+        private int _catchupPageSize;
+        private object _subscription;
+        private string _streamName;
+        private bool _liveOnly;
+
+        #region Constructors
         [Obsolete("Please use new static method CreateCatchUpSubscirptionFromPosition, this constructor will be removed in the future.")]
-        public EventStoreSubscriber(IEventStoreConnection connection, IDispatcher<ResolvedEvent> dispatcher,
-            string streamName, ILogger logger, int? startingPosition, int catchUpPageSize = 1024,
+        public EventStoreSubscriber(IEventStoreConnection connection, IDispatcher<ResolvedEvent> dispatcher, string streamName, ILogger logger, int? startingPosition, int catchUpPageSize = 1024,
             int upperQueueBound = 2048, TimeSpan? heartbeatFrequency = null, TimeSpan? heartbeatTimeout = null, int maxLiveQueueSize = 10000)
         {
             Init(connection, dispatcher, streamName, logger, heartbeatFrequency, heartbeatTimeout, startingPosition, catchUpPageSize, upperQueueBound, maxLiveQueueSize);
         }
 
         [Obsolete("Please use new static method CreateCatchupSubscriptionUsingCheckpoint, this constructor will be removed in the future.")]
-        public EventStoreSubscriber(IEventStoreConnection connection, IDispatcher<ResolvedEvent> dispatcher,
-            ILogger logger,
-            string streamName, string checkpointFilePath, int catchupPageSize = 1024, int upperQueueBound = 2048, TimeSpan? heartbeatFrequency = null, TimeSpan? heartbeatTimeout = null, int maxLiveQueueSize = 10000)
+        public EventStoreSubscriber(IEventStoreConnection connection, IDispatcher<ResolvedEvent> dispatcher, ILogger logger, string streamName, string checkpointFilePath, int catchupPageSize = 1024,
+            int upperQueueBound = 2048, TimeSpan? heartbeatFrequency = null, TimeSpan? heartbeatTimeout = null, int maxLiveQueueSize = 10000)
         {
             int? startingPosition = null;
             _checkpoint = new WriteThroughFileCheckpoint(checkpointFilePath, "lastProcessedPosition", false, -1);
 
             var initialCheckpointPosition = _checkpoint.Read();
-
-            if (initialCheckpointPosition != -1)
-                startingPosition = (int) initialCheckpointPosition;
+            if (initialCheckpointPosition != -1) startingPosition = (int)initialCheckpointPosition;
 
             Init(connection, dispatcher, streamName, logger, heartbeatFrequency, heartbeatTimeout, startingPosition, catchupPageSize, upperQueueBound, maxLiveQueueSize);
         }
 
-        private EventStoreSubscriber(IEventStoreConnection connection, IDispatcher<ResolvedEvent> dispatcher,
-            string streamName, ILogger logger, int upperQueueBound = 2048, TimeSpan? heartbeatFrequency = null,
-            TimeSpan? heartbeatTImeout = null)
+        private EventStoreSubscriber(IEventStoreConnection connection, IDispatcher<ResolvedEvent> dispatcher, string streamName, ILogger logger, int upperQueueBound = 2048,
+            TimeSpan? heartbeatFrequency = null, TimeSpan? heartbeatTImeout = null)
         {
-            Init(connection, dispatcher, streamName, logger, heartbeatFrequency, heartbeatTImeout,
-                upperQueueBound: upperQueueBound, liveOnly: true);
+            Init(connection, dispatcher, streamName, logger, heartbeatFrequency, heartbeatTImeout, upperQueueBound: upperQueueBound, liveOnly: true);
+        }
+        #endregion
+
+        #region Factory Methods
+        public static EventStoreSubscriber CreateLiveSubscription(IEventStoreConnection connection, IDispatcher<ResolvedEvent> dispatcher, string streamName,
+            ILogger logger, int upperQueueBound = 2048, TimeSpan? heartbeatFrequency = null, TimeSpan? heartbeatTImeout = null)
+        {
+            return new EventStoreSubscriber(connection, dispatcher, streamName, logger, upperQueueBound, heartbeatFrequency, heartbeatTImeout);
         }
 
-        public static EventStoreSubscriber CreateLiveSubscription(IEventStoreConnection connection, IDispatcher<ResolvedEvent> dispatcher,
-            string streamName, ILogger logger, int upperQueueBound = 2048, TimeSpan? heartbeatFrequency = null,
-            TimeSpan? heartbeatTImeout = null)
+        public static EventStoreSubscriber CreateCatchupSubscriptionUsingCheckpoint(IEventStoreConnection connection, IDispatcher<ResolvedEvent> dispatcher, string streamName, ILogger logger,
+            string checkpointFilePath, int catchupPageSize = 1024, int upperQueueBound = 2048, TimeSpan? heartbeatFrequency = null, TimeSpan? heartbeatTimeout = null, int maxLiveQueueSize = 10000)
         {
-            return new EventStoreSubscriber(connection,dispatcher,streamName,logger,upperQueueBound,heartbeatFrequency,heartbeatTImeout);
+            return new EventStoreSubscriber(connection, dispatcher, logger, streamName, checkpointFilePath, catchupPageSize, upperQueueBound, heartbeatFrequency, heartbeatTimeout, maxLiveQueueSize);
         }
 
-        public static EventStoreSubscriber CreateCatchupSubscriptionUsingCheckpoint(IEventStoreConnection connection, IDispatcher<ResolvedEvent> dispatcher,
-            string streamName, ILogger logger, string checkpointFilePath, int catchupPageSize = 1024, int upperQueueBound = 2048, TimeSpan? heartbeatFrequency = null, TimeSpan? heartbeatTimeout = null, int maxLiveQueueSize = 10000)
+        public static EventStoreSubscriber CreateCatchupSubscriptionFromPosition(IEventStoreConnection connection, IDispatcher<ResolvedEvent> dispatcher, string streamName, ILogger logger,
+            int? startingPosition, int catchupPageSize = 1024, int upperQueueBound = 2048, TimeSpan? heartbeatFrequency = null, TimeSpan? heartbeatTimeout = null, int maxLiveQueueSize = 10000)
         {
-            return new EventStoreSubscriber(connection, dispatcher, logger, streamName, checkpointFilePath,
-                catchupPageSize, upperQueueBound, heartbeatFrequency, heartbeatTimeout, maxLiveQueueSize);
+            return new EventStoreSubscriber(connection, dispatcher, streamName, logger, startingPosition, catchupPageSize, upperQueueBound, heartbeatFrequency, heartbeatTimeout, maxLiveQueueSize);
         }
-
-        public static EventStoreSubscriber CreateCatchupSubscriptionFromPosition(IEventStoreConnection connection,
-            IDispatcher<ResolvedEvent> dispatcher,
-            string streamName, ILogger logger, int? startingPosition, int catchupPageSize = 1024,
-            int upperQueueBound = 2048, TimeSpan? heartbeatFrequency = null, TimeSpan? heartbeatTimeout = null,
-            int maxLiveQueueSize = 10000)
-        {
-            return new EventStoreSubscriber(connection, dispatcher, streamName, logger, startingPosition,
-                catchupPageSize, upperQueueBound, heartbeatFrequency, heartbeatTimeout, maxLiveQueueSize);
-        }
+        #endregion
 
         private void Init(IEventStoreConnection connection, IDispatcher<ResolvedEvent> dispatcher, string streamName,
             ILogger logger, TimeSpan? heartbeatFrequency, TimeSpan? heartbeatTimeout, int? startingPosition = null,
@@ -161,18 +136,9 @@ namespace CR.MessageDispatch.Dispatchers.EventStore
             _maxLiveQueueSize = maxLiveQueueSize;
             _liveOnly = liveOnly;
 
-            //Make heartbeats optional!
-            //if (!heartbeatFrequency.HasValue)
-            //    heartbeatFrequency = TimeSpan.FromMinutes(1);
-
-            //if (!heartbeatTimeout.HasValue)
-            //    heartbeatTimeout = TimeSpan.FromMinutes(2);
             if (heartbeatTimeout != null && heartbeatFrequency != null)
             {
-
-                if (heartbeatFrequency > heartbeatTimeout)
-                    throw new ArgumentException("Heartbeat timeout must be greater than heartbeat frequency",
-                        nameof(heartbeatTimeout));
+                if (heartbeatFrequency > heartbeatTimeout) throw new ArgumentException("Heartbeat timeout must be greater than heartbeat frequency", nameof(heartbeatTimeout));
 
                 _heartbeatTimeout = heartbeatTimeout.Value;
                 _lastHeartbeat = DateTime.UtcNow;
@@ -182,13 +148,11 @@ namespace CR.MessageDispatch.Dispatchers.EventStore
             }
             else if (heartbeatTimeout == null && heartbeatFrequency != null)
             {
-                throw new ArgumentException("Heartbeat timeout must be set if heartbeat frequency is set",
-                    nameof(heartbeatTimeout));
+                throw new ArgumentException("Heartbeat timeout must be set if heartbeat frequency is set", nameof(heartbeatTimeout));
             }
-            else if (heartbeatTimeout != null && heartbeatFrequency == null)
+            else if (heartbeatTimeout != null)
             {
-                throw new ArgumentException("Heartbeat frequency must be set if heartbeat timeout is set",
-                    nameof(heartbeatFrequency));
+                throw new ArgumentException("Heartbeat frequency must be set if heartbeat timeout is set", nameof(heartbeatFrequency));
             } //Do not do anything if both are null
 
             _queue = new BlockingCollection<ResolvedEvent>(upperQueueBound);
@@ -196,84 +160,64 @@ namespace CR.MessageDispatch.Dispatchers.EventStore
 
         private void HeartbeatTimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
         {
-            SendHeartbeat();
-
-            if (ViewModelsReady)
-                return;
-
-            if (_lastHeartbeat < DateTime.UtcNow.Subtract(_heartbeatTimeout))
+            lock (_subscriptionLock)
             {
-                _logger.Error(string.Format("Subscriber heartbeat timeout, last heartbeat: {0} restarting subscription", _lastHeartbeat.ToString("G")));
+                SendHeartbeat();
+                if (ViewModelsReady || _lastHeartbeat >= DateTime.UtcNow.Subtract(_heartbeatTimeout)) return;
+                _logger.Error($"Subscriber heartbeat timeout, last heartbeat: {_lastHeartbeat:G} restarting subscription");
                 RestartSubscription();
             }
         }
 
         public void SendHeartbeat()
-        {
-            _connection.AppendToStreamAsync(_heartbeatStreamName, ExpectedVersion.Any,
-                new EventData(Guid.NewGuid(), _heartbeatEventType, false, new byte[0], new byte[0])).Wait();
-        }
+            => _connection.AppendToStreamAsync(_heartbeatStreamName, ExpectedVersion.Any, new EventData(Guid.NewGuid(), HeartbeatEventType, false, new byte[0], new byte[0])).Wait();
 
         private void RestartSubscription()
         {
-            if (_usingHeartbeats)
-            {
-                _heartbeatTimer.Stop();
-            }
+            if (_usingHeartbeats) _heartbeatTimer.Stop();
+
             lock (_subscriptionLock)
             {
-                if (_liveOnly)
-                {
-                    ((EventStoreSubscription)_subscription).Close();
-                }
-                else
-                {
-                    ((EventStoreCatchUpSubscription)_subscription).Stop();
-                }
-                _subscription = null;
-                _catchingUp = true;
-                _lastNonLiveEventNumber = Int32.MinValue;
+                KillSubscription();
                 _startingPosition = _lastReceivedEventNumber;
+                _lastNonLiveEventNumber = int.MinValue;
+                _catchingUp = true;
                 Start(true);
+            }
+
+            lock (_liveProcessingTimer)
+            {
+                if (!_liveProcessingTimer.Enabled) _liveProcessingTimer.Start();
             }
         }
 
         private void LiveProcessingTimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
-        {
-            _logger.Error("Event Store Subscription has been down for 10 minutes");
-        }
+            => _logger.Error("Event Store Subscription has been down for 10 minutes.");
 
         public void Start(bool restart = false)
         {
-            if (_usingHeartbeats)
-            {
-                SendHeartbeat();
-                _heartbeatTimer.Start();
-            }
             lock (_subscriptionLock)
             {
-                if (_liveOnly)
+                if (_usingHeartbeats)
                 {
-                    _subscription =
-                        _connection.SubscribeToStreamAsync(_streamName, true, EventAppeared, SubscriptionDropped).Result;
+                    SendHeartbeat();
+                    _heartbeatTimer.Start();
                 }
+
+                KillSubscription();
+                if (_liveOnly) _subscription = _connection.SubscribeToStreamAsync(_streamName, true, EventAppeared, SubscriptionDropped).Result;
                 else
                 {
-                    var catchUpSettings = new CatchUpSubscriptionSettings(_maxLiveQueueSize, _catchupPageSize, true,
-                        true);
+                    var catchUpSettings = new CatchUpSubscriptionSettings(_maxLiveQueueSize, _catchupPageSize, true, true);
                     _subscription = _connection.SubscribeToStreamFrom(_streamName, _startingPosition, catchUpSettings,
                         EventAppeared, LiveProcessingStarted, SubscriptionDropped);
                 }
             }
-            if (!restart)
-            {
-                if (_usingHeartbeats)
-                    _connection.SetStreamMetadataAsync(_heartbeatStreamName, ExpectedVersion.Any,
-                        StreamMetadata.Create(maxCount: 2));
 
-                Thread processor = new Thread(ProcessEvents) { IsBackground = true };
-                processor.Start();
-            }
+            if (restart) return;
+            if (_usingHeartbeats) _connection.SetStreamMetadataAsync(_heartbeatStreamName, ExpectedVersion.Any, StreamMetadata.Create(2));
+            var processor = new Thread(ProcessEvents) { IsBackground = true };
+            processor.Start();
         }
 
         private void ProcessEvents()
@@ -285,39 +229,18 @@ namespace CR.MessageDispatch.Dispatchers.EventStore
             }
         }
 
-        private void SubscriptionDropped(object eventStoreCatchUpSubscription,
-            SubscriptionDropReason subscriptionDropReason, Exception ex)
+        private void SubscriptionDropped(object eventStoreCatchUpSubscription, SubscriptionDropReason subscriptionDropReason, Exception ex)
         {
-
-            if (ex != null)
-            {
-                _logger.Info(ex, "Event Store subscription dropped {0}", subscriptionDropReason.ToString());
-            }
-            else
-            {
-                _logger.Info("Event Store subscription dropped {0}", subscriptionDropReason.ToString());
-            }
+            if (ex != null) _logger.Info(ex, "Event Store subscription dropped {0}", subscriptionDropReason.ToString());
+            else _logger.Info("Event Store subscription dropped {0}", subscriptionDropReason.ToString());
 
             if (subscriptionDropReason == SubscriptionDropReason.UserInitiated)
             {
                 _logger.Info("Not attempting to restart user initiated drop. Subscription is dead.");
                 return;
-            }//We don't care if we called close,
-
-
-            if (subscriptionDropReason == SubscriptionDropReason.ConnectionClosed)
-            {
-                _logger.Info("Not attempting to restart subscription on disposed connection. Subscription is dead.");
-                return;
             }
-                
+
             RestartSubscription();
-
-            lock (_liveProcessingTimer)
-            {
-                if (!_liveProcessingTimer.Enabled)
-                    _liveProcessingTimer.Start();
-            }
         }
 
         private void LiveProcessingStarted(EventStoreCatchUpSubscription eventStoreCatchUpSubscription)
@@ -331,14 +254,30 @@ namespace CR.MessageDispatch.Dispatchers.EventStore
             _logger.Info("Live event processing started");
         }
 
+        private void KillSubscription()
+        {
+            switch (_subscription)
+            {
+                case EventStoreSubscription liveSubscription:
+                    liveSubscription.Dispose();
+                    break;
+                case EventStoreCatchUpSubscription catchUpSubscription:
+                    catchUpSubscription.Stop();
+                    break;
+                case null: break;
+                default: throw new InvalidOperationException("The event store subscription was invalid.");
+            }
+
+            _subscription = null;
+        }
+
         private bool _catchingUp = true;
-        private int _lastNonLiveEventNumber = Int32.MinValue;
+        private int _lastNonLiveEventNumber = int.MinValue;
         private int _lastDispatchedEventNumber;
 
-        private void EventAppeared(object eventStoreCatchUpSubscription,
-            ResolvedEvent resolvedEvent)
+        private void EventAppeared(object eventStoreCatchUpSubscription, ResolvedEvent resolvedEvent)
         {
-            if (resolvedEvent.Event != null && resolvedEvent.Event.EventType == _heartbeatEventType)
+            if (resolvedEvent.Event != null && resolvedEvent.Event.EventType == HeartbeatEventType)
             {
                 _lastHeartbeat = DateTime.UtcNow;
                 return;
@@ -356,8 +295,7 @@ namespace CR.MessageDispatch.Dispatchers.EventStore
         private void ProcessEvent(ResolvedEvent resolvedEvent)
         {
             _eventsProcessed++;
-            if (resolvedEvent.Event == null || resolvedEvent.Event.EventType.StartsWith("$"))
-                return;
+            if (resolvedEvent.Event == null || resolvedEvent.Event.EventType.StartsWith("$")) return;
 
             try
             {
@@ -371,8 +309,7 @@ namespace CR.MessageDispatch.Dispatchers.EventStore
             catch (Exception ex)
             {
                 _logger.Error(ex, "Error dispatching event from Event Store subscriber ({0}/{1})",
-                    resolvedEvent.Event.EventStreamId,
-                    resolvedEvent.Event.EventNumber);
+                    resolvedEvent.Event.EventStreamId, resolvedEvent.Event.EventNumber);
             }
         }
 
@@ -380,13 +317,15 @@ namespace CR.MessageDispatch.Dispatchers.EventStore
         {
             lock (_subscriptionLock)
             {
-                if (_liveOnly)
+                switch (_subscription)
                 {
-                    ((EventStoreSubscription) _subscription).Close();
-                }
-                else
-                {
-                    ((EventStoreCatchUpSubscription) _subscription).Stop(TimeSpan.FromSeconds(1));
+                    case EventStoreSubscription liveSubscription:
+                        liveSubscription.Close();
+                        break;
+                    case EventStoreCatchUpSubscription catchupSubscription:
+                        catchupSubscription.Stop(TimeSpan.FromSeconds(1));
+                        break;
+                    default: return;
                 }
             }
         }
@@ -440,11 +379,11 @@ namespace CR.MessageDispatch.Dispatchers.EventStore
             _memStream = new MemoryStream(buffer);
 
             var handle = Filenative.CreateFile(_filename,
-                (uint) FileAccess.ReadWrite,
-                (uint) FileShare.ReadWrite,
+                (uint)FileAccess.ReadWrite,
+                (uint)FileShare.ReadWrite,
                 IntPtr.Zero,
-                (uint) FileMode.OpenOrCreate,
-                Filenative.FILE_FLAG_NO_BUFFERING | (int) FileOptions.WriteThrough,
+                (uint)FileMode.OpenOrCreate,
+                Filenative.FILE_FLAG_NO_BUFFERING | (int)FileOptions.WriteThrough,
                 IntPtr.Zero);
 
             _stream = new FileStream(handle, FileAccess.ReadWrite, 4096);
