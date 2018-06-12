@@ -7,10 +7,10 @@
     <Authors>Cognisant Research</Authors>
     <Company>Cognisant Research</Company>
     <Copyright>Cognisant Research 2018</Copyright>
-    <PackageLicenseUrl>https://github.com/cognisant/cr-message-dispatch/blob/master/LICENSE</PackageLicenseUrl>
-    <PackageProjectUrl>https://github.com/cognisant/cr-message-dispatch</PackageProjectUrl>
-    <PackageIconUrl>https://github.com/cognisant/cr-message-dispatch/blob/master/logo.png</PackageIconUrl>
-    <RepositoryUrl>https://github.com/cognisant/cr-message-dispatch</RepositoryUrl>
+    <PackageLicenseUrl>https://github.com/cognisant/MessageDispatch.Core/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/cognisant/MessageDispatch.Core</PackageProjectUrl>
+    <PackageIconUrl>https://github.com/cognisant/MessageDispatch.Core/blob/master/logo.png</PackageIconUrl>
+    <RepositoryUrl>https://github.com/cognisant/MessageDispatch.Core</RepositoryUrl>
     <PackageTags>Message Dispatching, Event Sourcing</PackageTags>
     <Description>The core package for CR.MessageDispatch. This is used to dispatch Events to Objects which consume them.</Description>
     <Product>CR.MessageDispatch</Product>
