@@ -4,14 +4,16 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>CR.MessageDispatch.Core</AssemblyName>
     <RootNamespace>CR.MessageDispatch.Core</RootNamespace>
-    <Authors>Cognisant</Authors>
-    <Company>Cognisant</Company>
-    <Copyright>Cognisant 2018</Copyright>
+    <Authors>Cognisant Research</Authors>
+    <Company>Cognisant Research</Company>
+    <Copyright>Cognisant Research 2018</Copyright>
     <PackageLicenseUrl>https://github.com/cognisant/cr-message-dispatch/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/cognisant/cr-message-dispatch</PackageProjectUrl>
     <PackageIconUrl>https://github.com/cognisant/cr-message-dispatch/blob/master/logo.png</PackageIconUrl>
     <RepositoryUrl>https://github.com/cognisant/cr-message-dispatch</RepositoryUrl>
     <PackageTags>Message Dispatching, Event Sourcing</PackageTags>
+    <Description>The core package for CR.MessageDispatch. This is used to dispatch Events to Objects which consume them.</Description>
+    <Product>CR.MessageDispatch</Product>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
