@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -14,6 +14,7 @@
     <PackageTags>Message Dispatching, Event Sourcing</PackageTags>
     <Description>The core package for CR.MessageDispatch. This is used to dispatch Events to Objects which consume them.</Description>
     <Product>CR.MessageDispatch</Product>
+    <PackageReleaseNotes>https://GitHub.com/Cognisant/MessageDispatch.Core/releases/tag/$(Version)</PackageReleaseNotes>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
