@@ -14,7 +14,7 @@
     <PackageTags>Message Dispatching, Event Sourcing</PackageTags>
     <Description>The core package for CR.MessageDispatch. This is used to dispatch Events to Objects which consume them.</Description>
     <Product>CR.MessageDispatch</Product>
-    <PackageReleaseNotes>https://GitHub.com/Cognisant/MessageDispatch.Core/releases/tag/$(Version)</PackageReleaseNotes>
+    <PackageReleaseNotes>https://GitHub.com/Cognisant/MessageDispatch.Core/releases/tag/$(Tag)</PackageReleaseNotes>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
