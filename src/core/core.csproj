@@ -31,7 +31,7 @@
     <PackageReference Include="CR.CodeStyle.CSharp.Full" Version="[1.0.1,2.0.0-0)">
       <PrivateAssets>All</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.CSharp" Version="[4.0.0-4.999.999)" />
+    <PackageReference Include="Microsoft.CSharp" Version="[4.0.1,5.0.0-a)" />
   </ItemGroup>
 
 </Project>
