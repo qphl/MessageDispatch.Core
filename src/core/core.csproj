@@ -15,6 +15,8 @@
     <Description>The core package for CorshamScience.MessageDispatch. This is used to dispatch Events to Objects which consume them.</Description>
     <Product>CorshamScience.MessageDispatch</Product>
     <PackageReleaseNotes>https://GitHub.com/qphl/MessageDispatch.Core/releases/tag/$(Tag)</PackageReleaseNotes>
+    <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
+    <PackageIcon>Logo.png</PackageIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -32,6 +34,13 @@
       <PrivateAssets>All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.CSharp" Version="[4.0.1,5.0.0-a)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Logo.png">
+      <PackagePath></PackagePath>
+      <Pack>True</Pack>
+    </None>
   </ItemGroup>
 
 </Project>
