@@ -7,7 +7,7 @@
     <Authors>Corsham Science</Authors>
     <Company>Corsham Science</Company>
     <Copyright>Corsham Science 2019</Copyright>
-    <PackageLicenseUrl>https://github.com/qphl/MessageDispatch.Core/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageLicense>https://github.com/qphl/MessageDispatch.Core/blob/master/LICENSE</PackageLicense>
     <PackageProjectUrl>https://github.com/qphl/MessageDispatch.Core</PackageProjectUrl>
     <PackageIconUrl>https://raw.githubusercontent.com/qphl/MessageDispatch.Core/master/logo.png</PackageIconUrl>
     <RepositoryUrl>https://github.com/qphl/MessageDispatch.Core</RepositoryUrl>
@@ -33,7 +33,7 @@
     <PackageReference Include="CorshamScience.CodeStyle.CSharp.Full" Version="3.0.0">
       <PrivateAssets>All</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.CSharp" Version="[4.0.1,5.0.0-a)" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.6.0" />
   </ItemGroup>
 
   <ItemGroup>
