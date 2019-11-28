@@ -1,14 +1,14 @@
-﻿// <copyright file="MultiplexingDispatcher.cs" company="Cognisant">
-// Copyright (c) Cognisant. All rights reserved.
+﻿// <copyright file="MultiplexingDispatcher.cs" company="Corsham Science">
+// Copyright (c) Corsham Science. All rights reserved.
 // </copyright>
 
-namespace CR.MessageDispatch.Core
+namespace CorshamScience.MessageDispatch.Core
 {
     /// <summary>
     /// A message dispatcher consisting of several other message dispatchers.
     /// This dispatcher will attempt to process every message through each of its constituent dispatchers.
     /// </summary>
-    /// <typeparam name="TMessage">Message Type</typeparam>
+    /// <typeparam name="TMessage">Message Type.</typeparam>
     public class MultiplexingDispatcher<TMessage> : IDispatcher<TMessage>
     {
         private readonly IDispatcher<TMessage>[] _dispatchers;

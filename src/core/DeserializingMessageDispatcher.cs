@@ -1,8 +1,8 @@
-﻿// <copyright file="DeserializingMessageDispatcher.cs" company="Cognisant">
-// Copyright (c) Cognisant. All rights reserved.
+﻿// <copyright file="DeserializingMessageDispatcher.cs" company="Corsham Science">
+// Copyright (c) Corsham Science. All rights reserved.
 // </copyright>
 
-namespace CR.MessageDispatch.Core
+namespace CorshamScience.MessageDispatch.Core
 {
     using System.Linq;
 

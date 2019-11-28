@@ -1,15 +1,15 @@
-﻿// <copyright file="RawMessageDispatcher.cs" company="Cognisant">
-// Copyright (c) Cognisant. All rights reserved.
+﻿// <copyright file="RawMessageDispatcher.cs" company="Corsham Science">
+// Copyright (c) Corsham Science. All rights reserved.
 // </copyright>
 
-namespace CR.MessageDispatch.Core
+namespace CorshamScience.MessageDispatch.Core
 {
     using System;
 
     /// <summary>
     /// A message dispatcher which dispatches messages in the raw form in which they were passed to it. It does not perform any deserialization.
     /// </summary>
-    /// <typeparam name="TMessage">Message Type</typeparam>
+    /// <typeparam name="TMessage">Message Type.</typeparam>
     public class RawMessageDispatcher<TMessage> : DeserializingMessageDispatcher<TMessage, Type>
     {
         /// <summary>

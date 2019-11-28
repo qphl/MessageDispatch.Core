@@ -1,8 +1,8 @@
-﻿// <copyright file="IDispatcher.cs" company="Cognisant">
-// Copyright (c) Cognisant. All rights reserved.
+﻿// <copyright file="IDispatcher.cs" company="Corsham Science">
+// Copyright (c) Corsham Science. All rights reserved.
 // </copyright>
 
-namespace CR.MessageDispatch.Core
+namespace CorshamScience.MessageDispatch.Core
 {
     /// <summary>
     /// A common interface for a message dispatcher.
