@@ -1,8 +1,8 @@
-﻿// <copyright file="MessageHandlerRegistry.cs" company="Cognisant">
-// Copyright (c) Cognisant. All rights reserved.
+﻿// <copyright file="MessageHandlerRegistry.cs" company="Corsham Science">
+// Copyright (c) Corsham Science. All rights reserved.
 // </copyright>
 
-namespace CR.MessageDispatch.Core
+namespace CorshamScience.MessageDispatch.Core
 {
     using System;
     using System.Collections.Generic;
@@ -10,7 +10,7 @@ namespace CR.MessageDispatch.Core
     /// <summary>
     /// A registry of message types and the methods which can be used to handle those types.
     /// </summary>
-    /// <typeparam name="TKey">Key Type</typeparam>
+    /// <typeparam name="TKey">Key Type.</typeparam>
     public class MessageHandlerRegistry<TKey> : IMessageHandlerRegistration<TKey>, IMessageHandlerLookup<TKey>
     {
         private Dictionary<TKey, List<object>> _eventHandlers = new Dictionary<TKey, List<object>>();

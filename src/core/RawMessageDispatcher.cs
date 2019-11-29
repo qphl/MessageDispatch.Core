@@ -1,15 +1,15 @@
-﻿// <copyright file="RawMessageDispatcher.cs" company="Cognisant">
-// Copyright (c) Cognisant. All rights reserved.
+﻿// <copyright file="RawMessageDispatcher.cs" company="Corsham Science">
+// Copyright (c) Corsham Science. All rights reserved.
 // </copyright>
 
-namespace CR.MessageDispatch.Core
+namespace CorshamScience.MessageDispatch.Core
 {
     using System;
 
     /// <summary>
     /// A message dispatcher which dispatches messages in the raw form in which they were passed to it. It does not perform any deserialization.
     /// </summary>
-    /// <typeparam name="TMessage">Message Type</typeparam>
+    /// <typeparam name="TMessage">Message Type.</typeparam>
     public class RawMessageDispatcher<TMessage> : DeserializingMessageDispatcher<TMessage, Type>
     {
         /// <summary>
@@ -34,7 +34,7 @@ namespace CR.MessageDispatch.Core
         /// <param name="messageType">A message type (this parameter is not used).</param>
         /// <param name="rawMessage">The message to pass through.</param>
         /// <param name="deserialized">The object to output the raw message as.</param>
-        /// <returns><c>true</c></returns>
+        /// <returns><c>true</c>.</returns>
         protected override bool TryDeserialize(Type messageType, TMessage rawMessage, out object deserialized)
         {
             deserialized = rawMessage;

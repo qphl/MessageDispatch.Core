@@ -1,15 +1,15 @@
-﻿// <copyright file="FixedRetryingDispatcher.cs" company="Cognisant">
-// Copyright (c) Cognisant. All rights reserved.
+﻿// <copyright file="FixedRetryingDispatcher.cs" company="Corsham Science">
+// Copyright (c) Corsham Science. All rights reserved.
 // </copyright>
 
-namespace CR.MessageDispatch.Core
+namespace CorshamScience.MessageDispatch.Core
 {
     using System;
 
     /// <summary>
     /// A wrapping message dispatcher whose inner dispatcher will keep making attempts to process a message at a constant frequency, until the number of retries equals an assigned (nullable) limit.
     /// </summary>
-    /// <typeparam name="TMessage">Message Type</typeparam>
+    /// <typeparam name="TMessage">Message Type.</typeparam>
     public class FixedRetryingDispatcher<TMessage> : RetryingDispatcher<TMessage>
     {
         private readonly TimeSpan _retryPeriod;

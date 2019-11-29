@@ -2,36 +2,45 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <AssemblyName>CR.MessageDispatch.Core</AssemblyName>
-    <RootNamespace>CR.MessageDispatch.Core</RootNamespace>
-    <Authors>Cognisant Research</Authors>
-    <Company>Cognisant Research</Company>
-    <Copyright>Cognisant Research 2018</Copyright>
-    <PackageLicenseUrl>https://github.com/cognisant/MessageDispatch.Core/blob/master/LICENSE</PackageLicenseUrl>
-    <PackageProjectUrl>https://github.com/cognisant/MessageDispatch.Core</PackageProjectUrl>
-    <PackageIconUrl>https://raw.githubusercontent.com/cognisant/MessageDispatch.Core/master/logo.png</PackageIconUrl>
-    <RepositoryUrl>https://github.com/cognisant/MessageDispatch.Core</RepositoryUrl>
+    <AssemblyName>CorshamScience.MessageDispatch.Core</AssemblyName>
+    <RootNamespace>CorshamScience.MessageDispatch.Core</RootNamespace>
+    <Authors>Corsham Science</Authors>
+    <Company>Corsham Science</Company>
+    <Copyright>Corsham Science 2019</Copyright>
+    <PackageLicense>https://github.com/qphl/MessageDispatch.Core/blob/master/LICENSE</PackageLicense>
+    <PackageProjectUrl>https://github.com/qphl/MessageDispatch.Core</PackageProjectUrl>
+    <PackageIconUrl>https://raw.githubusercontent.com/qphl/MessageDispatch.Core/master/logo.png</PackageIconUrl>
+    <RepositoryUrl>https://github.com/qphl/MessageDispatch.Core</RepositoryUrl>
     <PackageTags>Message Dispatching, Event Sourcing</PackageTags>
-    <Description>The core package for CR.MessageDispatch. This is used to dispatch Events to Objects which consume them.</Description>
-    <Product>CR.MessageDispatch</Product>
-    <PackageReleaseNotes>https://GitHub.com/Cognisant/MessageDispatch.Core/releases/tag/$(Tag)</PackageReleaseNotes>
+    <Description>The core package for CorshamScience.MessageDispatch. This is used to dispatch Events to Objects which consume them.</Description>
+    <Product>CorshamScience.MessageDispatch</Product>
+    <PackageReleaseNotes>https://GitHub.com/qphl/MessageDispatch.Core/releases/tag/$(Tag)</PackageReleaseNotes>
+    <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
+    <PackageIcon>Logo.png</PackageIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>bin\Debug\netstandard2.0\CR.MessageDispatch.Core.xml</DocumentationFile>
+    <DocumentationFile>bin\Debug\netstandard2.0\CorshamScience.MessageDispatch.Core.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
-    <DocumentationFile>bin\Release\netstandard2.0\CR.MessageDispatch.Core.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\netstandard2.0\CorshamScience.MessageDispatch.Core.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CR.CodeStyle.CSharp.Full" Version="[1.0.1,2.0.0-0)">
+    <PackageReference Include="CorshamScience.CodeStyle.CSharp.Full" Version="3.0.0">
       <PrivateAssets>All</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.CSharp" Version="[4.0.1,5.0.0-a)" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Logo.png">
+      <PackagePath></PackagePath>
+      <Pack>True</Pack>
+    </None>
   </ItemGroup>
 
 </Project>
