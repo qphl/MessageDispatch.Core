@@ -4,6 +4,8 @@
 
 namespace CorshamScience.MessageDispatch.Core
 {
+    using System.Threading.Tasks;
+
     /// <summary>
     /// A common interface for implementing a consumer which takes in and handles messages.
     /// </summary>
@@ -14,6 +16,7 @@ namespace CorshamScience.MessageDispatch.Core
         /// The method for processing messages.
         /// </summary>
         /// <param name="message">A message which should be handled.</param>
-        void Handle(TMessage message);
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        Task Handle(TMessage message);
     }
 }

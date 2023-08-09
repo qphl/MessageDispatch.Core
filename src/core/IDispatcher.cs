@@ -13,7 +13,7 @@ namespace CorshamScience.MessageDispatch.Core
         /// <summary>
         /// The method which controls dispatching messages.
         /// </summary>
-        /// <param name="message">Represents a message for the dipatcher to attempt to process.</param>
+        /// <param name="message">Represents a message for the dispatcher to attempt to process.</param>
         void Dispatch(TMessage message);
     }
 }
