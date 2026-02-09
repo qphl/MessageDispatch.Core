@@ -36,13 +36,13 @@ namespace CorshamScience.MessageDispatch.Core
         }
 
         /// <summary>
-        /// The method used after every message processing attmept to recalculate the retry interval (the time for which a dispatcher will wait before it retries to process a message).
+        /// The method used after every message processing attempt to recalculate the retry interval (the time for which a dispatcher will wait before it retries to process a message).
         /// </summary>
         /// <param name="attempt">Represents the number of times the dispatcher has already attempted to process a message.</param>
         /// <returns>The amount of time the dispatcher should wait before retrying to process a message.</returns>
         public override TimeSpan RetryInterval(int attempt)
         {
-            return TimeSpan.FromMilliseconds(_retryPeriod.Milliseconds * Math.Pow(attempt, _exponentialMultiplier));
+            return TimeSpan.FromMilliseconds(_retryPeriod.TotalMilliseconds * Math.Pow(attempt, _exponentialMultiplier));
         }
     }
 }
